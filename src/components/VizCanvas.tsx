@@ -4,7 +4,8 @@ export type VizType =
   | 'trend' | 'inventory' | 'supplychain' | 'material' | 'size'
   | 'fitting' | 'design' | 'production' | 'color' | 'runway'
   | 'sustainable' | 'stylist' | 'textile' | 'fairtrade' | 'luxury'
-  | 'logistics' | 'marketing' | 'quality' | 'collection' | 'resale';
+  | 'logistics' | 'marketing' | 'quality' | 'collection' | 'resale'
+  | 'fashionmedia';
 
 const VIZ_MAP: Record<string, VizType> = {
   'trend-forecast': 'trend',
@@ -44,7 +45,7 @@ const VIZ_MAP: Record<string, VizType> = {
   'collection': 'collection',
   'resale-price': 'resale',
   'resale': 'resale',
-  'fashion-media': 'resale',
+  'fashion-media': 'fashionmedia',
 };
 
 export function getVizType(id: string): VizType {
@@ -585,6 +586,60 @@ const ResaleViz: React.FC<VizProps> = ({ running, optimized, onNodeClick }) => {
   );
 };
 
+/* ---- fashionmedia: media influence radial dashboard ---- */
+const FashionMediaViz: React.FC<VizProps> = ({ running, optimized, onNodeClick }) => {
+  const channels = [
+    { label: 'Instagram', angle: -90, reach: 0.92, color: '#E1306C' },
+    { label: 'TikTok',    angle: -30, reach: 0.85, color: '#00f2ea' },
+    { label: 'YouTube',   angle:  30, reach: 0.70, color: '#FF0000' },
+    { label: 'X/Twitter', angle:  90, reach: 0.55, color: '#1DA1F2' },
+    { label: 'Pinterest', angle: 150, reach: 0.63, color: '#E60023' },
+    { label: 'Magazine',  angle: 210, reach: 0.48, color: '#F59E0B' },
+  ];
+  const cx = 200, cy = 108, maxR = 72;
+  return (
+    <g>
+      <text x="200" y="18" fill={TX} fontSize="10" textAnchor="middle">ファッションメディア最適化</text>
+      {/* concentric guide rings */}
+      {[0.33, 0.66, 1.0].map((s, i) => (
+        <circle key={i} cx={cx} cy={cy} r={maxR * s} fill="none"
+          stroke={MU} strokeWidth="0.4" strokeDasharray="3 4" opacity="0.2" />
+      ))}
+      {/* spokes + channel bubbles */}
+      {channels.map((ch, i) => {
+        const rad = (ch.angle * Math.PI) / 180;
+        const dist = optimized ? maxR * ch.reach : maxR * 0.35;
+        const bx = cx + dist * Math.cos(rad);
+        const by = cy + dist * Math.sin(rad);
+        const bubbleR = optimized ? 8 + ch.reach * 10 : 6;
+        const col = optimized ? ch.color : MU;
+        return (
+          <g key={i} onClick={() => onNodeClick(String(i))} style={{ cursor: 'pointer' }}>
+            <line x1={cx} y1={cy} x2={bx} y2={by}
+              stroke={col} strokeWidth={optimized ? 1.4 : 0.6} opacity={optimized ? 0.5 : 0.2}>
+              {running && <animate attributeName="opacity" values="0.15;0.5;0.15" dur={`${1.5 + i * 0.25}s`} repeatCount="indefinite" />}
+            </line>
+            <circle cx={bx} cy={by} r={bubbleR} fill={col} opacity={optimized ? 0.55 : 0.15}>
+              {running && <animate attributeName="r" values={`${bubbleR - 2};${bubbleR + 2};${bubbleR - 2}`} dur={`${1.8 + i * 0.2}s`} repeatCount="indefinite" />}
+            </circle>
+            {optimized && (
+              <text x={bx} y={by + bubbleR + 11} fill={MU} fontSize="6" textAnchor="middle">{ch.label}</text>
+            )}
+          </g>
+        );
+      })}
+      {/* center hub */}
+      <circle cx={cx} cy={cy} r={optimized ? 12 : 8} fill={optimized ? C1 : MU} opacity={optimized ? 0.7 : 0.25}>
+        {running && <animate attributeName="opacity" values="0.25;0.7;0.25" dur="2s" repeatCount="indefinite" />}
+      </circle>
+      {optimized && <text x={cx} y={cy + 3} fill={TX} fontSize="6" textAnchor="middle">HUB</text>}
+      <text x="200" y="208" fill={MU} fontSize="8" textAnchor="middle">
+        {optimized ? 'メディアROI +58% / エンゲージメント +73%' : 'メディアチャネル分析中'}
+      </text>
+    </g>
+  );
+};
+
 /* ---- registry & main component ---- */
 
 const VIZ_COMPONENTS: Record<VizType, React.FC<VizProps>> = {
@@ -594,7 +649,7 @@ const VIZ_COMPONENTS: Record<VizType, React.FC<VizProps>> = {
   runway: RunwayViz, sustainable: SustainableViz, stylist: StylistViz,
   textile: TextileViz, fairtrade: FairTradeViz, luxury: LuxuryViz,
   logistics: LogisticsViz, marketing: MarketingViz, quality: QualityViz,
-  collection: CollectionViz, resale: ResaleViz,
+  collection: CollectionViz, resale: ResaleViz, fashionmedia: FashionMediaViz,
 };
 
 export default function VizCanvas({
